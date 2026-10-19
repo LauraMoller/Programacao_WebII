@@ -1,140 +1,104 @@
 package Controler;
 
-import Model.Especie;
-import Model.Pet;
-import Model.Tutor;
+import jakarta.jws.WebService;
 
 import java.util.ArrayList;
-import java.util.IllformedLocaleException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import Interface.Especie;
+import Interface.Pet;
+import Model.PetModel;
+
+/**
+ * 
+ * Implementação do serviço SOAP.
+ * Guarda os pets em um map (volátil).
+ * Cada pet recebe um id sequencial, começando em 1, gerado em criarPet.
+ * A validação dos campos fica na classe PetModel. O controller cuida apenas
+ * de localizar o tutor pelo id e de manter o vínculo com os tutores, que
+ * é guardado como ids.
+ * Todas as operações lançam IllegalArgumentException quando algum campo é
+ * inválido.
+ */
+@WebService(endpointInterface = "Interface.Pet")
 public class PetControler implements Pet {
-    private String nome = "";
-    private float peso = 0;
-    private Integer idade = null;
-    private Especie especie = Especie.NAO_INFORMADO;
-    private List<Tutor> tutores = new ArrayList<>();
+    /**
+     * Map que relaciona o id do pet com o objeto pet.
+     */
+    private final Map<Integer, PetModel> pets = new ConcurrentHashMap<>();
+    /**
+     * Gerador de ids para pets.
+     */
+    private final AtomicInteger proximoId = new AtomicInteger(1);
 
-    public PetControler(String nome, float peso, int idade, Especie especie) {
-        setNome(nome);
-        setPeso(peso);
-        setIdade(idade);
-        setEspecie(especie);
-    }
-
-    public void setNome(String nome) throws IllegalArgumentException {
-        if (nome.isBlank()) {
-            throw new IllegalArgumentException("Erro: o nome precisa ser informado.");
+    /**
+     * Procura um pet nos pets cadastrados pelo seu id.
+     * 
+     * @param id id do pet.
+     * @return objeto pet.
+     * @throws IllegalArgumentException caso o pet não exista no sistema.
+     */
+    private PetModel buscar(int id) throws IllegalArgumentException {
+        PetModel pet = pets.get(id);
+        if (pet == null) {
+            throw new IllegalArgumentException("Erro: pet " + id + " não encontrado.");
         }
-        this.nome = nome;
+        return pet;
     }
 
-    public String getNome() {
-        return nome;
-    }
-
-    public void setPeso(float peso) throws IllegalArgumentException {
-        if (peso <= 0) {
-            throw new IllegalArgumentException("Erro: o peso precisa ser maior que zero.");
-        }
-        this.peso = peso;
-    }
-
-    public float getPeso() {
-        return peso;
-    }
-
-    public void setIdade(Integer idade) throws IllegalArgumentException {
-        if (idade < 0) {
-            throw new IllegalArgumentException("Erro: a idade precisa ser maior ou igual a zero.");
-        }
-        this.idade = idade;
-    }
-
-    public Integer getIdade() {
-        return idade;
-    }
-
-    public void setEspecie(Especie especie) throws IllegalArgumentException {
-        if (especie == null) {
-            throw new IllformedLocaleException("Erro: espécie precisa ser informada.");
-        }
-
-        this.especie = especie;
-    }
-
-    public Especie getEspecieENUM() {
-        return especie;
-    }
-
-    public String getEspecieString() {
-        switch (especie) {
-            case CACHORRO:
-                return "Cachorro";
-            case GATO:
-                return "Gato";
-            case AVES:
-                return "Aves";
-            case ANFIBIOS:
-                return "Anfíbios";
-            case ROEDOR:
-                return "Roedor";
-            case REPTIL:
-                return "Réptil";
-            case PEIXE:
-                return "Peixe";
-            default:
-                return "Não Informado";
-        }
-    }
-
-
+    /** {@inheritDoc} */
     @Override
-    public void atualizarDadosPet(String nome, float peso, Integer idade, Especie especie) throws IllegalArgumentException {
-        if (!nome.isBlank()) {
-            setNome(nome);
-        }
-
-        if (peso >= 0) {
-            setPeso(peso);
-        }
-
-        if (!(idade == null)) {
-            setIdade(idade);
-        }
-
-        if (!(especie == null)) {
-            setEspecie(especie);
-        }
+    public int criarPet(String nome, float peso, int idade, Especie especie) {
+        PetModel pet = new PetModel(nome, peso, idade, especie);
+        int id = proximoId.getAndIncrement();
+        pets.put(id, pet);
+        return id;
     }
 
+    /** {@inheritDoc} */
     @Override
-    public List<Tutor> consultarTutores() {
-        return tutores;
+    public void atualizarDadosPet(int id, String nome, float peso, int idade, Especie especie) {
+        PetModel p = buscar(id);
+        p.setNome(nome);
+        p.setPeso(peso);
+        p.setIdade(idade);
+        p.setEspecie(especie);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void adicionarTutor(Tutor tutor) throws IllegalArgumentException {
-        if (tutor == null) {
-            throw new IllegalArgumentException("Erro: o tutor precisa ser informado.");
+    public List<Integer> consultarTutores(int idPet) {
+        return new ArrayList<>(buscar(idPet).getTutores());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void adicionarTutor(int idPet, int idTutor) {
+        PetModel p = buscar(idPet);
+        if (!p.getTutores().add(idTutor)) {
+            throw new IllegalArgumentException("Erro: tutor já vinculado a este pet.");
         }
-        tutores.add(tutor);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public String consultarDadosPet() {
-        String dados = "Nome: " + getNome() + "\n";
-        dados += "Idade: " + getIdade() + "\n";
-        dados += "Peso: " + getPeso() + "\n";
-        dados += "Espécie: " + getEspecieString() + "\n";
-        return dados;
+    public String consultarDadosPet(int id) {
+        PetModel p = buscar(id);
+        return "Nome: " + p.getNome() + "\n"
+                + "Idade: " + p.getIdade() + "\n"
+                + "Peso: " + p.getPeso() + "\n"
+                + "Espécie: " + p.getEspecieString() + "\n";
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void removerTutor(Tutor tutor) throws IllegalArgumentException {
-        if (!(tutores.contains(tutor))) {
-            throw new IllegalArgumentException("Erro: Tutor não encontrado.");
+    public void removerTutor(int idPet, int idTutor) {
+        if (!buscar(idPet).getTutores().remove(idTutor)) {
+            throw new IllegalArgumentException("Erro: tutor não encontrado neste pet.");
         }
-        tutores.remove(tutor);
     }
+
 }

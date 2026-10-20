@@ -60,18 +60,31 @@ public class TutorControler implements Tutor {
     @Override
     public String consultarDadosTutor(int id) {
         TutorModel t = buscar(id);
-        return "Nome: " + t.getNome() + "\n"
-                + "Telefone: " + t.getTelefone() + "\n"
-                + "Endereço: " + t.getEndereco() + "\n";
+        if (t != null) {
+            return "Nome: " + t.getNome() + "\n"
+                    + "Telefone: " + t.getTelefone() + "\n"
+                    + "Endereço: " + t.getEndereco() + "\n";
+        }
+        return "Tutor inválido.";
     }
 
     /** {@inheritDoc} */
     @Override
     public void atualizarDadosTutor(int id, String nome, String telefone, String endereco) {
         TutorModel t = buscar(id);
-        t.setNome(nome);
-        t.setTelefone(telefone);
-        t.setEndereco(endereco);
+        if (t != null) {
+            if (nome != null) {
+                t.setNome(nome);
+            }
+
+            if (telefone != null) {
+                t.setTelefone(telefone);
+            }
+
+            if (endereco != null) {
+                t.setEndereco(endereco);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -97,7 +110,7 @@ public class TutorControler implements Tutor {
 
     /** {@inheritDoc} */
     @Override
-    public void removerPet(int idTutor, int idPet) {
+    public void removerVinculoTutor(int idTutor, int idPet) {
         if (!buscar(idTutor).getPets().remove(idPet)) {
             throw new IllegalArgumentException("Erro: pet não encontrado neste tutor.");
         }

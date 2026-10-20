@@ -80,6 +80,6 @@ public interface Tutor {
      * @param idPet   id do pet.
      */
     @WebMethod
-    void removerPet(int idTutor, int idPet);
+    void removerVinculoTutor(int idTutor, int idPet);
 
 }

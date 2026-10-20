@@ -62,10 +62,25 @@ public class PetControler implements Pet {
     @Override
     public void atualizarDadosPet(int id, String nome, float peso, int idade, Especie especie) {
         PetModel p = buscar(id);
-        p.setNome(nome);
-        p.setPeso(peso);
-        p.setIdade(idade);
-        p.setEspecie(especie);
+        if (p != null) {
+            if (nome != null) {
+                p.setNome(nome);
+            }
+
+            if (peso > 0) {
+                p.setPeso(peso);
+            }
+
+            if (idade >= 0) {
+                p.setIdade(idade);
+            }
+
+            if (especie != especie) {
+                p.setEspecie(especie);
+            }
+
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -95,10 +110,17 @@ public class PetControler implements Pet {
 
     /** {@inheritDoc} */
     @Override
-    public void removerTutor(int idPet, int idTutor) {
+    public void removerVinculoPet(int idPet, int idTutor) {
         if (!buscar(idPet).getTutores().remove(idTutor)) {
             throw new IllegalArgumentException("Erro: tutor não encontrado neste pet.");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void removerPet(int idPet) {
+        buscar(idPet);
+        pets.remove(idPet);
     }
 
 }

@@ -74,5 +74,12 @@ public interface Pet {
          * @param idTutor id do tutor.
          */
         @WebMethod
-        void removerTutor(int idPet, int idTutor);
+        void removerVinculoPet(int idPet, int idTutor);
+
+        /**
+         * Apaga um pet do sistema.
+         * @param idPet ide do pet.
+         */
+        @WebMethod 
+        void removerPet(int idPet);
 }
